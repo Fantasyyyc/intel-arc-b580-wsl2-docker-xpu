@@ -83,6 +83,7 @@ RUN mkdir -p /tmp/neo && cd /tmp/neo && \
     curl -sL -O https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/intel-ocloc_26.35.39758.10-0_amd64.deb && \
     curl -sL -O https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/intel-opencl-icd_26.35.39758.10-0_amd64.deb && \
     curl -sL -O https://github.com/intel/compute-runtime/releases/download/26.35.39758.10/libze-intel-gpu1_26.35.39758.10-0_amd64.deb && \
+    curl -sL -O https://github.com/oneapi-src/level-zero/releases/download/v1.34.0/libze1_1.34.0+u24.04_amd64.deb && \
     dpkg -i --force-overwrite *.deb && \
     rm -rf /tmp/neo
 

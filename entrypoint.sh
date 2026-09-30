@@ -11,18 +11,15 @@ if [ -n "$HELPER_PATH" ]; then
     DRV_DIR=$(dirname "$HELPER_PATH")
     echo "[entrypoint] Found Intel driver directory: $DRV_DIR"
 elif [ -d "$DEFAULT_DRV_DIR" ]; then
-    echo "[entrypoint] Dynamic lookup failed, using fallback driver directory: $DEFAULT_DRV_DIR"
+    echo "[entrypoint] Dynamic lookup failed, falling back to default driver path: $DEFAULT_DRV_DIR"
     DRV_DIR="$DEFAULT_DRV_DIR"
 else
-    echo "[entrypoint] WARNING: Neither dynamic nor fallback driver directory found! Ensure -v /usr/lib/wsl:/usr/lib/wsl is mounted."
+    echo "[entrypoint] WARNING: Neither dynamic nor default driver path found! Check -v /usr/lib/wsl:/usr/lib/wsl mount."
     DRV_DIR=""
 fi
 
-# Configure dynamic linker so all processes (including docker exec) resolve Intel WSL libraries
 if [ -n "$DRV_DIR" ]; then
-    echo "/usr/lib/wsl/lib" > /etc/ld.so.conf.d/00-wsl.conf
-    echo "$DRV_DIR" >> /etc/ld.so.conf.d/00-wsl.conf
-    ldconfig 2>/dev/null || true
+    # /usr/lib/wsl/lib must come first, followed by vendor driver folder
     export LD_LIBRARY_PATH="/usr/lib/wsl/lib:${DRV_DIR}:${LD_LIBRARY_PATH}"
 else
     export LD_LIBRARY_PATH="/usr/lib/wsl/lib:${LD_LIBRARY_PATH}"
