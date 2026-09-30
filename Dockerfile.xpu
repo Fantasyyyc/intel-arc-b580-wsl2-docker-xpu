@@ -1,0 +1,53 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ZES_ENABLE_SYSMAN=0 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    wget \
+    git \
+    python3 \
+    python3-pip \
+    libze1 \
+    ocl-icd-libopencl1 \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Intel Compute Runtime 26.35.39758.10, GmmLib 22.10.0, and IGC 2.41.5 for Battlemage (Xe2)
+# Note: IGC v2.41.5 assets carry the '+22716' build suffix on GitHub releases
+ARG COMPUTE_RUNTIME_VERSION=26.35.39758.10
+ARG GMMLIB_VERSION=22.10.0
+ARG IGC_VERSION=2.41.5
+ARG IGC_BUILD=22716
+
+RUN set -eux; \
+    mkdir -p /tmp/neo && cd /tmp/neo && \
+    CR="https://github.com/intel/compute-runtime/releases/download/${COMPUTE_RUNTIME_VERSION}" && \
+    IGC="https://github.com/intel/intel-graphics-compiler/releases/download/v${IGC_VERSION}" && \
+    curl -fsSL -O "${CR}/libigdgmm12_${GMMLIB_VERSION}_amd64.deb" && \
+    curl -fsSL -O "${CR}/intel-ocloc_${COMPUTE_RUNTIME_VERSION}-0_amd64.deb" && \
+    curl -fsSL -O "${CR}/intel-opencl-icd_${COMPUTE_RUNTIME_VERSION}-0_amd64.deb" && \
+    curl -fsSL -O "${CR}/libze-intel-gpu1_${COMPUTE_RUNTIME_VERSION}-0_amd64.deb" && \
+    curl -fsSL -O "${IGC}/intel-igc-core-2_${IGC_VERSION}+${IGC_BUILD}_amd64.deb" && \
+    curl -fsSL -O "${IGC}/intel-igc-opencl-2_${IGC_VERSION}+${IGC_BUILD}_amd64.deb" && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ./*.deb && \
+    cd / && rm -rf /tmp/neo /var/lib/apt/lists/*
+
+# Install official PyTorch with native Intel Arc XPU backend
+RUN pip3 install --no-cache-dir --break-system-packages \
+    torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/xpu
+
+# Dynamic driver lookup entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+WORKDIR /workspace
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["tail", "-f", "/dev/null"]
